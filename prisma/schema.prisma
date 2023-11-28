@@ -1,0 +1,71 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["jsonProtocol"]
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl         = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+  shadowDatabaseUrl = env("POSTGRES_URL_NON_POOLING") // used for migrations
+}
+
+model Persona {
+  id           Int            @id @default(autoincrement())
+  name         String
+  role         Role           @default(SYSTEM)
+  content      String
+  image        String
+  createdAt    DateTime       @default(now())
+  Conversation Conversation[]
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  role           Role
+  content        String
+  createdAt      DateTime     @default(now())
+  Conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId Int
+  Prompt         Prompt?
+}
+
+model Conversation {
+  id         Int                  @id @default(autoincrement())
+  name       String
+  persona    Persona              @relation(fields: [personaId], references: [id])
+  personaId  Int
+  messages   Message[]
+  category   ConversationCategory @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  createdAt  DateTime             @default(now())
+}
+
+model ConversationCategory {
+  id           Int            @id @default(autoincrement())
+  name         String
+  createdAt    DateTime       @default(now())
+  Conversation Conversation[]
+}
+
+model PromptCategory {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  Prompt    Prompt[]
+}
+
+model Prompt {
+  id         Int            @id @default(autoincrement())
+  message    Message        @relation(fields: [messageId], references: [id])
+  messageId  Int            @unique
+  category   PromptCategory @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  createdAt  DateTime       @default(now())
+}
+
+enum Role {
+  USER
+  SYSTEM
+  ASSISTANT
+}
